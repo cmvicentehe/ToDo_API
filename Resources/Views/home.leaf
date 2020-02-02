@@ -1,0 +1,33 @@
+<html>
+    <body>
+        <h3>To do manager</h3>
+        <form method="post" action="/sendTaskInFormView">
+            <input name="state: " type="checkbox">
+            <p>Task name: </p>
+            <p>
+            <textarea name="name" rows="10" cols="40" placeholder="Write your name here"></textarea>
+            </p>
+
+            <p>Task date: </p>
+            <p>
+            <textarea name="date" rows="10" cols="40" placeholder="Write your date here"></textarea>
+            </p>
+
+            <p>Task notes: </p>
+            <p>
+            <textarea name="notes" rows="10" cols="40" placeholder="Write your notes here"></textarea>
+            </p>
+            <p><input type="submit" /></p>
+        </form>
+
+        <h2>Task list</h2>
+
+        #for(task in tasks) {
+        <form method="delete" action="/deleteInFormView/#(task.id)">
+        <p>#(task.name) at date: "#(task.dueDate)".
+        <input type="submit" value="Delete"/>
+        </p>
+        </form>
+        }
+    </body>
+</html>
