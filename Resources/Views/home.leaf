@@ -42,7 +42,7 @@
         <h2>Task list</h2>
 
         #for(task in tasks) {
-        <form method="delete" action="/deleteInFormView/#(task.id)">
+        <form method="post" action="/deleteInFormView/#(task.id)">
         <p>#(task.name) at date: "#(task.dueDate)"
         <input type="submit" value="Delete"/>
         </p>

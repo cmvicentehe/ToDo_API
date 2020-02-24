@@ -16,7 +16,7 @@ class ToDoController: RouteCollection {
         router.get("tasks", use: getTasksHandler)
         router.post("send", use: postTaskHandler)
         router.post("sendTaskInFormView", use: postTaskInFormHandler)
-        router.delete("deleteInFormView", ToDoTask.parameter, use: deleteTaskByIdInViewHandler)
+        router.post("deleteInFormView", ToDoTask.parameter, use: deleteTaskByIdInViewHandler)
         router.delete("delete", ToDoTask.parameter, use: deleteTaskByIdHandler)
         router.patch("update", ToDoTask.parameter, use: updateTaskByIdHandler)
     }
