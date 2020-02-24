@@ -7,6 +7,7 @@
 
 import Foundation
 import Vapor
+import Leaf
 
 class ToDoController: RouteCollection {
     func boot(router: Router) throws {
@@ -40,19 +41,19 @@ private extension ToDoController {
 
     func postTaskHandler(_ request: Request) throws -> Future<HTTPStatus> {
         let taskElement = try task(from: request)
-        return taskElement.save(on: request).transform(to: .created)
+        return taskElement.create(on: request).transform(to: .created)
     }
 
     func postTaskInFormHandler(_ request: Request) throws -> Future<Response> {
         let taskElement = try task(from: request)
-        return taskElement.save(on: request).map(to: Response.self) { _ in
+        return taskElement.create(on: request).map(to: Response.self) { _ in
             return request.redirect(to: "/")
         }
     }
 
    func deleteTaskByIdInViewHandler(_ request: Request) throws -> Future<Response> {
        return try request.parameters.next(ToDoTask.self).flatMap(to: Response.self) { taskElement in
-           return taskElement.delete(on: request).map(to: Response.self) { _ in
+        return taskElement.delete(on: request).map(to: Response.self) { task in
                return request.redirect(to: "/")
            }
        }
@@ -75,6 +76,7 @@ private extension ToDoController {
 private extension ToDoController {
 
     func task(from request: Request) throws -> ToDoTask {
+        let id: String = try request.content.syncGet(String.self, at: "id")
         let name: String = try request.content.syncGet(at: "name")
         let dueDate: String = try request.content.syncGet(at: "date")
         let date = convert(dateString: dueDate)
@@ -82,7 +84,7 @@ private extension ToDoController {
         let stateString: String? = try? request.content.syncGet(at: "state")
         let state: Int = (stateString != nil) ? 1 : 0
         let taskState: TaskState = translateState(from: state)
-        let task = ToDoTask(id: nil,
+        let task = ToDoTask(id: UUID(uuidString: id),
                             name: name,
                             dueDate: date,
                             notes: notes,
@@ -104,7 +106,7 @@ private extension ToDoController {
 
     func convert(dateString: String) -> Date? {
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd/MMM/yyyy"
+        dateFormatter.dateFormat = "dd/MM/yyyy"
         return dateFormatter.date(from: dateString)
     }
 }
