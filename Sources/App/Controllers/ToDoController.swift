@@ -78,7 +78,7 @@ private extension ToDoController {
     func task(from request: Request) throws -> ToDoTask {
         let id: String = try request.content.syncGet(String.self, at: "id")
         let name: String = try request.content.syncGet(at: "name")
-        let dueDate: String = try request.content.syncGet(at: "date")
+        let dueDate: String = try request.content.syncGet(at: "dueDate")
         let date = convert(dateString: dueDate)
         let notes: String = try request.content.syncGet(at: "notes")
         let stateString: String? = try? request.content.syncGet(at: "state")

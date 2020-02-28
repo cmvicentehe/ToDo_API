@@ -24,6 +24,6 @@ struct ToDoTask: Codable {
 }
 
 extension ToDoTask: Content {}
+extension ToDoTask: Parameter {}
 extension ToDoTask: Migration {}
 extension ToDoTask: SQLiteUUIDModel {}
-extension ToDoTask: Parameter {}
