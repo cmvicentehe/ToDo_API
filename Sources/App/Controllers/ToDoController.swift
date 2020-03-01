@@ -14,11 +14,12 @@ class ToDoController: RouteCollection {
         router.get(use: getHomeHandler)
         router.get(use: getTasksInViewHandler)
         router.get("tasks", use: getTasksHandler)
-        router.post("send", use: postTaskHandler)
+        router.delete("task", ToDoTask.parameter, use: deleteTaskByIdHandler)
+        router.patch("task", use: updateTaskByIdHandler)
+        router.post("task", use: postTaskHandler)
+        // Form
         router.post("sendTaskInFormView", use: postTaskInFormHandler)
-        router.post("deleteInFormView", ToDoTask.parameter, use: deleteTaskByIdInViewHandler)
-        router.delete("delete", ToDoTask.parameter, use: deleteTaskByIdHandler)
-        router.patch("update", ToDoTask.parameter, use: updateTaskByIdHandler)
+        router.post("deleteTaskInFormView", ToDoTask.parameter, use: deleteTaskByIdInViewHandler)
     }
 }
 
@@ -66,9 +67,8 @@ private extension ToDoController {
    }
 
     func updateTaskByIdHandler(_ request: Request) throws -> Future<HTTPStatus> {
-        return try request.parameters.next(ToDoTask.self).flatMap(to: HTTPStatus.self) { taskElement in
-            return taskElement.update(on: request).transform(to: .noContent)
-        }
+        let taskElement = try task(from: request)
+        return taskElement.update(on: request).transform(to: .ok)
     }
 }
 
@@ -79,10 +79,10 @@ private extension ToDoController {
         let id: String = try request.content.syncGet(String.self, at: "id")
         let name: String = try request.content.syncGet(at: "name")
         let dueDate: String = try request.content.syncGet(at: "dueDate")
-        let date = convert(dateString: dueDate)
+        let date = CustomDateFormatter.convertDateStringToDate(dateString: dueDate,
+                                                               with: .default)
         let notes: String = try request.content.syncGet(at: "notes")
-        let stateString: String? = try? request.content.syncGet(at: "state")
-        let state: Int = (stateString != nil) ? 1 : 0
+        let state: Int = try request.content.syncGet(at: "state")
         let taskState: TaskState = translateState(from: state)
         let task = ToDoTask(id: UUID(uuidString: id),
                             name: name,
@@ -102,11 +102,5 @@ private extension ToDoController {
         default:
             return .unknown
         }
-    }
-
-    func convert(dateString: String) -> Date? {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd/MM/yyyy"
-        return dateFormatter.date(from: dateString)
     }
 }
