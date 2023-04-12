@@ -10,65 +10,72 @@ import Vapor
 import Leaf
 
 class ToDoController: RouteCollection {
-    func boot(router: Router) throws {
-        router.get(use: getHomeHandler)
-        router.get(use: getTasksInViewHandler)
-        router.get("tasks", use: getTasksHandler)
-        router.delete("task", ToDoTask.parameter, use: deleteTaskByIdHandler)
-        router.patch("task", use: updateTaskByIdHandler)
-        router.post("task", use: postTaskHandler)
+
+    func boot(routes: RoutesBuilder) throws {
+        routes.get(use: getTasksInViewHandler)
+        routes.get("tasks", use: getTasksHandler)
+        routes.delete("task", use: deleteTaskByIdHandler)
+        routes.patch("task", use: updateTaskByIdHandler)
+        routes.post("task", use: postTaskHandler)
         // Form
-        router.post("sendTaskInFormView", use: postTaskInFormHandler)
-        router.post("deleteTaskInFormView", ToDoTask.parameter, use: deleteTaskByIdInViewHandler)
+        routes.post("sendTaskInFormView", use: postTaskInFormHandler)
+        routes.post("deleteTaskInFormView", use: deleteTaskByIdInViewHandler)
     }
 }
 
 // MARK: - Routes methods
 private extension ToDoController {
-    func getHomeHandler(_ request: Request) throws -> Future<View> {
-        return try request.view().render("home")
-    }
 
-    func getTasksInViewHandler(_ request: Request) throws -> Future<View> {
-        return ToDoTask.query(on: request).sort(\ToDoTask.dueDate, .descending).all().flatMap(to: View.self) { tasks in
+    func getTasksInViewHandler(_ request: Request) -> EventLoopFuture<View> {
+        let database = request.db
+        return ToDoTask.query(on: database).sort(\ToDoTask.$dueDate, .descending).all().flatMap { tasks in
             let context = ["tasks": tasks]
-            return try request.view().render("home.leaf", context)
+            return request.view.render("home.leaf", context)
         }
     }
 
-    func getTasksHandler(_ request: Request) throws -> Future<[ToDoTask]> {
-       return ToDoTask.query(on: request).sort(\ToDoTask.id, .descending).all()
+    func getTasksHandler(_ request: Request) async throws -> [ToDoTask] {
+        let database = request.db
+        return try await ToDoTask.query(on: database).sort(\ToDoTask.$id, .descending).all()
     }
 
-    func postTaskHandler(_ request: Request) throws -> Future<HTTPStatus> {
+    func postTaskHandler(_ request: Request) throws -> EventLoopFuture<HTTPStatus> {
+        let database = request.db
         let taskElement = try task(from: request)
-        return taskElement.create(on: request).transform(to: .created)
+        return taskElement.create(on: database).transform(to: .created)
     }
 
-    func postTaskInFormHandler(_ request: Request) throws -> Future<Response> {
+    func postTaskInFormHandler(_ request: Request) throws -> EventLoopFuture<Response> {
+        let database = request.db
         let taskElement = try task(from: request)
-        return taskElement.create(on: request).map(to: Response.self) { _ in
+        return taskElement.create(on: database).map { _ in
             return request.redirect(to: "/")
         }
     }
 
-   func deleteTaskByIdInViewHandler(_ request: Request) throws -> Future<Response> {
-       return try request.parameters.next(ToDoTask.self).flatMap(to: Response.self) { taskElement in
-        return taskElement.delete(on: request).map(to: Response.self) { task in
-               return request.redirect(to: "/")
-           }
-       }
-   }
+    func deleteTaskByIdInViewHandler(_ request: Request) throws -> EventLoopFuture<Response> {
+        let database = request.db
+        return ToDoTask.find(try request.query.get(at: "id"),
+                             on: database)
+        .unwrap(or: Abort(.notFound))
+        .flatMap { $0.delete(on: database) }
+        .map { request.redirect(to: "/") }
+    }
 
-   func deleteTaskByIdHandler(_ request: Request) throws -> Future<HTTPStatus> {
-       return try request.parameters.next(ToDoTask.self).flatMap(to: HTTPStatus.self) { taskElement in
-           return taskElement.delete(on: request).transform(to: .noContent)
-       }
-   }
+    func deleteTaskByIdHandler(_ request: Request) async throws -> HTTPStatus {
+        let database = request.db
+        guard let toDoTask = try await ToDoTask.find(request.parameters.get("id"),
+                                                     on: database) else {
+            throw Abort(.notFound)
+        }
+        try await toDoTask.delete(on: database)
+        return .noContent
+    }
 
-    func updateTaskByIdHandler(_ request: Request) throws -> Future<HTTPStatus> {
+    func updateTaskByIdHandler(_ request: Request) throws -> EventLoopFuture<HTTPStatus> {
+        let database = request.db
         let taskElement = try task(from: request)
-        return taskElement.update(on: request).transform(to: .ok)
+        return taskElement.update(on: database).transform(to: .ok)
     }
 }
 
@@ -76,13 +83,13 @@ private extension ToDoController {
 private extension ToDoController {
 
     func task(from request: Request) throws -> ToDoTask {
-        let id: String = try request.content.syncGet(String.self, at: "id")
-        let name: String = try request.content.syncGet(at: "name")
-        let dueDate: String = try request.content.syncGet(at: "dueDate")
+        let id: String = try request.content.get(at: "id")
+        let name: String = try request.content.get(at: "name")
+        let dueDate: String = try request.content.get(at: "dueDate")
         let date = CustomDateFormatter.convertDateStringToDate(dateString: dueDate,
                                                                with: .default)
-        let notes: String = try request.content.syncGet(at: "notes")
-        let state: Int = try request.content.syncGet(at: "state")
+        let notes: String = try request.content.get(at: "notes")
+        let state: String? = try request.content.get(at: "state")
         let taskState: TaskState = translateState(from: state)
         let task = ToDoTask(id: UUID(uuidString: id),
                             name: name,
@@ -93,14 +100,7 @@ private extension ToDoController {
         return task
     }
 
-    func translateState(from integer: Int) -> TaskState {
-        switch integer {
-        case 0:
-            return .toDo
-        case 1:
-            return .done
-        default:
-            return .unknown
-        }
+    func translateState(from string: String?) -> TaskState {
+        return string != nil ? .done : .toDo
     }
 }

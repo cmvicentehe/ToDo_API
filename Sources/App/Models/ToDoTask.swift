@@ -5,25 +5,46 @@
 //  Created by Carlos Manuel Vicente Herrero on 15/12/2019.
 //
 
-import Foundation
 import Vapor
-import FluentSQLite
+import Fluent
 
-enum TaskState: Int, Codable {
+enum TaskState: Int, Codable, Content {
+    
     case unknown = -1
     case toDo = 0
     case done = 1
 }
 
-struct ToDoTask: Codable {
-    var id: UUID?
-    let name: String
-    let dueDate: Date?
-    let notes: String?
-    let state: TaskState
-}
+final class ToDoTask: Model, Content, Codable {
 
-extension ToDoTask: Content {}
-extension ToDoTask: Parameter {}
-extension ToDoTask: Migration {}
-extension ToDoTask: SQLiteUUIDModel {}
+    static let schema = "todotask"
+
+    @ID(key: .id)
+    var id: UUID?
+
+    @Field(key: "name")
+    var name: String
+
+    @OptionalField(key: "dueDate")
+    var dueDate: Date?
+
+    @OptionalField(key: "notes")
+    var notes: String?
+    
+    @Field(key: "state")
+    var state: TaskState
+
+    init() {}
+
+    init(id: UUID? = nil,
+         name: String,
+         dueDate: Date? = nil,
+         notes: String? = nil,
+         state: TaskState) {
+        self.id = id
+        self.name = name
+        self.dueDate = dueDate
+        self.notes = notes
+        self.state = state
+    }
+}

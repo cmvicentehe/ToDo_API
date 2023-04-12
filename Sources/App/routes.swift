@@ -1,6 +1,7 @@
+import Fluent
 import Vapor
 
-public func routes(_ router: Router) throws {
+func routes(_ app: Application) throws {
     let toDoController = ToDoController()
-    try router.register(collection: toDoController)
+    try app.register(collection: toDoController)
 }

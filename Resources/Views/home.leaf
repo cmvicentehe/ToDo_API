@@ -2,7 +2,8 @@
     <body onload="create_UUID()">
         <h3>To do manager</h3>
         <form method="post" action="/sendTaskInFormView">
-            <input name="state: " type="checkbox">
+            <p>State: </p>
+            <input name="state" type="checkbox">
             <p>Task id: </p>
             <p>
             <textarea id="id" name="id" cols="40">N/A</textarea>
@@ -41,12 +42,12 @@
 
         <h2>Task list</h2>
 
-        #for(task in tasks) {
-        <form method="post" action="/deleteTaskInFormView/#(task.id)">
+        #for(task in tasks):
+        <form method="post" action="/deleteTaskInFormView?id=#(task.id)">
         <p>#(task.name) at date: "#(task.dueDate)"
         <input type="submit" value="Delete"/>
         </p>
         </form>
-        }
+        #endfor
     </body>
 </html>
