@@ -1,0 +1,53 @@
+<html>
+    <body onload="create_UUID()">
+        <h3>To do manager</h3>
+        <form method="post" action="/sendTaskInFormView">
+            <p>State: </p>
+            <input name="state" type="checkbox">
+            <p>Task id: </p>
+            <p>
+            <textarea id="id" name="id" cols="40">N/A</textarea>
+            </p>
+
+            <script type="text/javascript">
+                function create_UUID() {
+                    var dt = new Date().getTime();
+                    var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                        var r = (dt + Math.random()*16)%16 | 0;
+                        dt = Math.floor(dt/16);
+                        return (c=='x' ? r :(r&0x3|0x8)).toString(16);
+                    });
+                
+                    document.getElementById('id').innerText = uuid;
+                    return uuid;
+                }
+            </script>
+
+            <p>Task name: </p>
+            <p>
+            <textarea name="name" rows="10" cols="40" placeholder="Write your name here"></textarea>
+            </p>
+
+            <p>Task date: </p>
+            <p>
+            <textarea name="dueDate" rows="10" cols="40" placeholder="Write your date here"></textarea>
+            </p>
+
+            <p>Task notes: </p>
+            <p>
+            <textarea name="notes" rows="10" cols="40" placeholder="Write your notes here"></textarea>
+            </p>
+            <p><input type="submit" /></p>
+        </form>
+
+        <h2>Task list</h2>
+
+        #for(task in tasks):
+        <form method="post" action="/deleteTaskInFormView?id=#(task.id)">
+        <p>#(task.name) at date: "#(task.dueDate)"
+        <input type="submit" value="Delete"/>
+        </p>
+        </form>
+        #endfor
+    </body>
+</html>
